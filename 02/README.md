@@ -24,7 +24,7 @@
 - `amount` – сумма в долларах  
 - `type` – тип транзакции: `SALE` или `REFUND`
 
-## Задача
+## Задача 1
 
 Для каждого `SALE`-транзакта найди, были ли ещё продажи у этого же клиента в течение следующих 30 дней.
 
@@ -35,7 +35,7 @@
 | -- | --- | --         |   --          | -- |      - | 
 | 1|	1	| 2024-01-23	| 172.23	| 2 |	619.04 |
 
-## Решение
+## Решение 1
 
 Вот такой код:
 
@@ -62,3 +62,35 @@ group by trans_id, cust_id, trans_date, base_amount
 order by cust_id, trans_date
 ;
 ```
+
+## Задача 2
+
+Для каждого `SALE`-транзакта клиента сравни его `amount`
+со средним чеком клиента за предыдущие 60 дней.
+
+Если сумма больше чем в 2 раза среднего чека за предыдущие 60 дней —
+пометь такую продажу как `anomaly = true`.
+
+## Решение 2
+
+```sql
+with sales as (
+	select *
+	from transactions
+	where "type" = 'SALE')
+select s1.trans_id, s1.cust_id, s1.trans_date, s1.amount,
+	round(avg(s2.amount), 2) avg_prev_60d,
+	case
+		when s1.amount > avg(s2.amount) * 2 then true 
+		else false
+	end anomaly
+from sales s1
+left join sales s2
+on 1=1
+and s1.trans_id <> s2.trans_id
+and s1.cust_id = s2.cust_id
+and s1.trans_date >= s2.trans_date
+and s1.trans_date <= s2.trans_date + interval '60 days'
+group by s1.trans_id, s1.cust_id, s1.trans_date, s1.amount;
+```
+
