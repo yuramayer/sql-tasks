@@ -15,5 +15,5 @@ select _month, cust_id, total_amount, order_count, avg_amount,
 	total_amount - lag(total_amount) over (partition by cust_id order by _month) amount_diff
 from month_groups
 order by _month, 
-	row_number() over(partition by _month order by total_amount desc)
+	monthly_rank
 ;
