@@ -148,7 +148,7 @@ and amount > prev_amount
 
 > Я могу получить понедельник даты через `date_trunc('week', trans_date)`
 
-```postgres
+```sql
 with sales as (
 	select *
 	from transactions
