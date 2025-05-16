@@ -129,4 +129,50 @@ and amount > prev_amount
 ;
 ```
 
+## Задача 4
+
+Для каждого клиента:
+- Разбей все SALE-транзакции по неделям (например, "2024-01-01 → неделя 1", "2024-01-08 → неделя 2" и т.п.)
+- Посчитай суммарную amount за каждую неделю
+- Найди ту неделю, где клиент потратил больше всего
+
+Верни таблицу:
+- `cust_id`
+- `week_start_date` (например, понедельник той недели)
+- `total_week_amount`
+- `rank` этой недели среди всех недель клиента (вдруг есть несколько одинаковых максимумов)
+
+Также поверх посчитай подзапросом, какую долю от всех трат клиента за всё время составляет пиковая неделя
+
+## Решение 4
+
+> Я могу получить понедельник даты через `date_trunc('week', trans_date)`
+
+```postgres
+with sales as (
+	select *
+	from transactions
+	where "type" = 'SALE'
+), sales_grouped as (
+	select cust_id, 
+		extract('week' from trans_date) week_number,
+		date_trunc('week', trans_date)::date week_start_date,
+		sum(amount) as total_week_amount
+	from sales
+	group by cust_id, week_number, week_start_date
+), sales_ranked as (
+	select cust_id, 
+		week_start_date,
+		total_week_amount,
+		rank() over(partition by cust_id order by total_week_amount desc) week_amount_rank,
+		round(total_week_amount /
+			sum(total_week_amount) over(partition by cust_id), 2) * 100 week_rate_perc
+	from sales_grouped
+)
+select *
+from sales_ranked
+where week_amount_rank=1
+;
+```
+
 
