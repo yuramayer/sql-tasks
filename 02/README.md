@@ -1,6 +1,6 @@
-# Последующие продажи клиентов
+# Продажи клиентов
 
-Задачка с группировкой и собственным Join-ом
+Задачки по продажам с группировкой и собственным Join-ом
 
 ## Таблица
 
@@ -93,4 +93,40 @@ and s1.trans_date >= s2.trans_date
 and s1.trans_date <= s2.trans_date + interval '60 days'
 group by s1.trans_id, s1.cust_id, s1.trans_date, s1.amount;
 ```
+
+## Задача 3
+
+Для каждого клиента найди такие пары транзакций SALE, где:
+ - обе принадлежат одному клиенту
+ - вторая транзакция произошла быстрее, чем предыдущая пара
+ - и сумма во второй транзакции выше суммы в первой
+
+## Решение 3
+
+```sql
+with sales as (
+	select *
+	from transactions
+	where "type" = 'SALE'
+), sales_prev as (
+	select *,
+	lag(trans_id) over (partition by cust_id 
+						  order by trans_date) prev_id
+	from sales
+), sales_info_prev as (
+	select sp1.*, sp2.trans_id, sp2.trans_date as prev_date,
+		sp1.trans_date - sp2.trans_date as trans_date_diff,
+		lag(sp1.trans_date - sp2.trans_date) over (partition by sp1.cust_id) as prev_trans_date_diff,
+		sp2.amount as prev_amount
+	from sales_prev sp1
+	left join sales_prev sp2
+	on sp1.prev_id = sp2.trans_id
+) select *
+from sales_info_prev
+where 1=1
+and trans_date_diff < prev_trans_date_diff
+and amount > prev_amount
+;
+```
+
 
